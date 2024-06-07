@@ -742,7 +742,7 @@ export function createCLIParser(argv: string[]) {
 			"versions",
 			"List, view, upload and deploy Versions of your Worker to Cloudflare [beta]",
 			(yargs) => {
-				return registerVersionsSubcommands(yargs.command(subHelp));
+				return registerVersionsSubcommands(yargs.command(subHelp), subHelp);
 			}
 		);
 	}

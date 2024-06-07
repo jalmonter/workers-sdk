@@ -503,13 +503,9 @@ describe("wrangler secret", () => {
 			mockListRequest({ scriptName: "script-name" });
 			await runWrangler("secret list --name script-name");
 			expect(std.out).toMatchInlineSnapshot(`
-			        "[
-			          {
-			            \\"name\\": \\"the-secret-name\\",
-			            \\"type\\": \\"secret_text\\"
-			          }
-			        ]"
-		      `);
+				"Secret Name: the-secret-name
+				"
+			`);
 			expect(std.err).toMatchInlineSnapshot(`""`);
 		});
 
@@ -519,13 +515,9 @@ describe("wrangler secret", () => {
 				"secret list --name script-name --env some-env --legacy-env"
 			);
 			expect(std.out).toMatchInlineSnapshot(`
-			        "[
-			          {
-			            \\"name\\": \\"the-secret-name\\",
-			            \\"type\\": \\"secret_text\\"
-			          }
-			        ]"
-		      `);
+				"Secret Name: the-secret-name
+				"
+			`);
 			expect(std.err).toMatchInlineSnapshot(`""`);
 		});
 
@@ -535,13 +527,9 @@ describe("wrangler secret", () => {
 				"secret list --name script-name --env some-env --legacy-env false"
 			);
 			expect(std.out).toMatchInlineSnapshot(`
-			        "[
-			          {
-			            \\"name\\": \\"the-secret-name\\",
-			            \\"type\\": \\"secret_text\\"
-			          }
-			        ]"
-		      `);
+				"Secret Name: the-secret-name
+				"
+			`);
 			expect(std.err).toMatchInlineSnapshot(`""`);
 		});
 
