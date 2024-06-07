@@ -25,9 +25,11 @@ import { createMethodsRPC } from "vitest/node";
 import { createChunkingSocket } from "../shared/chunking-socket";
 import { OPTIONS_PATH, parseProjectOptions } from "./config";
 import {
+	calculateAvailableThreads,
 	getProjectPath,
 	getRelativeProjectPath,
 	isFileNotFoundError,
+	ThreadPool,
 	WORKER_NAME_PREFIX,
 } from "./helpers";
 import {
@@ -601,11 +603,14 @@ async function getProjectMiniflare(
 	const changed = !util.isDeepStrictEqual(project.previousMfOptions, mfOptions);
 	project.previousMfOptions = mfOptions;
 
-	const previousSingleInstance = project.mf instanceof Miniflare;
-	const singleInstance =
+	const hasPreviousSingleInstance = project.mf instanceof Miniflare;
+	const shouldUseSingleInstance =
 		project.options.singleWorker || !project.options.isolatedStorage;
 
-	if (project.mf !== undefined && previousSingleInstance !== singleInstance) {
+	if (
+		project.mf !== undefined &&
+		hasPreviousSingleInstance !== shouldUseSingleInstance
+	) {
 		// If isolated storage configuration has changed, reset project instances
 		log.info(`Isolation changed for ${project.relativePath}, resetting...`);
 		await forEachMiniflare(project.mf, (mf) => mf.dispose());
@@ -614,7 +619,7 @@ async function getProjectMiniflare(
 
 	if (project.mf === undefined) {
 		// If `mf` is now `undefined`, create new instances
-		if (singleInstance) {
+		if (shouldUseSingleInstance) {
 			log.info(`Starting single runtime for ${project.relativePath}...`);
 			project.mf = new Miniflare(mfOptions);
 		} else {
@@ -875,6 +880,9 @@ export default function (ctx: Vitest): ProcessPool {
 	// This function is called when config changes and may be called on re-runs
 	assertCompatibleVitestVersion(ctx);
 
+	const availableThreads = calculateAvailableThreads();
+	const threadPool = new ThreadPool(availableThreads);
+
 	return {
 		name: "vitest-pool-workers",
 		async runTests(specs, invalidates) {
@@ -983,10 +991,19 @@ export default function (ctx: Vitest): ProcessPool {
 					assert(mf instanceof Map, "Expected multiple isolated instances");
 					const name = getRunnerName(workspaceProject);
 					for (const file of files) {
+						await threadPool.nextAvailableThread();
 						const fileMf = mf.get(file);
 						assert(fileMf !== undefined);
 						resultPromises.push(
-							runTests(ctx, fileMf, name, project, config, [file], invalidates)
+							runTests(
+								ctx,
+								fileMf,
+								name,
+								project,
+								config,
+								[file],
+								invalidates
+							).finally(() => threadPool.releaseThread())
 						);
 					}
 				} else {
@@ -994,9 +1011,18 @@ export default function (ctx: Vitest): ProcessPool {
 					//  --> single instance with multiple runner workers
 					assert(mf instanceof Miniflare, "Expected single instance");
 					for (const file of files) {
+						await threadPool.nextAvailableThread();
 						const name = getRunnerName(workspaceProject, file);
 						resultPromises.push(
-							runTests(ctx, mf, name, project, config, [file], invalidates)
+							runTests(
+								ctx,
+								mf,
+								name,
+								project,
+								config,
+								[file],
+								invalidates
+							).finally(() => threadPool.releaseThread())
 						);
 					}
 				}
