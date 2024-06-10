@@ -284,12 +284,12 @@ parameter in module format Workers.
 
 - `compatibilityDate?: string`
 
-  [Compatibility date](https://developers.cloudflare.com/workers/platform/compatibility-dates/)
+  [Compatibility date](https://developers.cloudflare.com/workers/configuration/compatibility-dates)
   to use for this Worker. Defaults to a date far in the past.
 
 - `compatibilityFlags?: string[]`
 
-  [Compatibility flags](https://developers.cloudflare.com/workers/platform/compatibility-dates/)
+  [Compatibility flags](https://developers.cloudflare.com/workers/configuration/compatibility-dates/#compatibility-flags)
   to use for this Worker.
 
 - `bindings?: Record<string, Json>`
